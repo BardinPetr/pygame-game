@@ -2,16 +2,20 @@ import os
 import pygame
 import sys
 
-d=(700,700)
-
 pygame.init()
+
+displayInfo = pygame.display.Info()
+d = (displayInfo.current_w, displayInfo.current_h)
+
 screen = pygame.display.set_mode(d)
 player_group = pygame.sprite.Group()
-sprites=pygame.sprite.Group()
-running=True
+sprites = pygame.sprite.Group()
+running = True
+
+pygame.display.toggle_fullscreen()
 
 
-def load_image(name, colorkey = None):
+def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     try:
         image = pygame.image.load(fullname)
@@ -25,15 +29,16 @@ def load_image(name, colorkey = None):
         image.set_colorkey(colorkey)
     return image
 
+
 def terminate():
     pygame.quit()
-    sys.exit();
+    sys.exit()
+
 
 def startScreen():
-
     introText = ["Иди к выходу"]
 
-    screen.blit(image, (0, 0));
+    screen.blit(image, (0, 0))
     font = pygame.font.Font(None, 30)
     textCoord = 300
     for line in introText:
@@ -55,10 +60,9 @@ def startScreen():
 
 
 def endScreen():
-
     introText = ["Конец"]
 
-    screen.blit(image, (0, 0));
+    screen.blit(image, (0, 0))
     font = pygame.font.Font(None, 300)
     textCoord = 0
     for line in introText:
@@ -86,47 +90,50 @@ class Player(pygame.sprite.Sprite):
     left = load_image('Left.png')
     right = load_image('Right.png')
 
-    def __init__(self,group, x, y):
+    def __init__(self, group, x, y):
         super().__init__(group)
         self.image = self.up
         self.rect = self.image.get_rect()
-        self.rect.x=x
-        self.rect.y=y
+        self.rect.x = x
+        self.rect.y = y
 
     def get_event(self):
-        if (pygame.key.get_pressed()[pygame.K_UP] != 0):
-            self.image=self.up
-            self.rect.y-=30
-        if (pygame.key.get_pressed()[pygame.K_DOWN] != 0):
-            self.image=self.down
-            self.rect.y+=30
-        if (pygame.key.get_pressed()[pygame.K_LEFT] != 0):
-            self.image=self.left
-            self.rect.x-=30
-        if (pygame.key.get_pressed()[pygame.K_RIGHT] != 0):
-            self.image=self.right
-            self.rect.x+=30
+        if pygame.key.get_pressed()[pygame.K_UP] != 0:
+            self.image = self.up
+            self.rect.y -= 30
+        if pygame.key.get_pressed()[pygame.K_DOWN] != 0:
+            self.image = self.down
+            self.rect.y += 30
+        if pygame.key.get_pressed()[pygame.K_LEFT] != 0:
+            self.image = self.left
+            self.rect.x -= 30
+        if pygame.key.get_pressed()[pygame.K_RIGHT] != 0:
+            self.image = self.right
+            self.rect.x += 30
+
+
 class Objects(pygame.sprite.Sprite):
-    cancel=load_image('Cancel.png')
+    cancel = load_image('Cancel.png')
     cancel = pygame.transform.scale(cancel, (200, 50))
-    def __init__(self,group, x, y):
+
+    def __init__(self, group, x, y):
         super().__init__(group)
         self.image = self.cancel
         self.rect = self.image.get_rect()
-        self.rect.x=x
-        self.rect.y=y
+        self.rect.x = x
+        self.rect.y = y
 
     def update(self):
         if pygame.sprite.spritecollideany(self, player_group):
             return 1
 
-image=load_image('Intro.jpg')
-image=pygame.transform.scale(image, (700, 700));
-startScreen()
-Player(player_group,150,150)
-Objects(sprites,300,500)
-image=load_image('Background.jpg')
 
+image = load_image('Intro.jpg')
+image = pygame.transform.scale(image, d)
+startScreen()
+Player(player_group, 150, 150)
+Objects(sprites, 300, 500)
+image = load_image('Background.jpg')
 
 while running:
     for event in pygame.event.get():
@@ -134,13 +141,13 @@ while running:
             running = False
         for i in player_group:
             i.get_event()
-    screen.blit(image, (0, 0));
+    screen.blit(image, (0, 0))
     sprites.draw(screen)
     for i in sprites:
-        if i.update()==1:
+        if i.update() == 1:
             image = load_image('Intro.jpg')
-            image = pygame.transform.scale(image, (700, 700));
+            image = pygame.transform.scale(image, d)
             endScreen()
-            running=False
+            running = False
     player_group.draw(screen)
     pygame.display.flip()
