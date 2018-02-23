@@ -1,19 +1,24 @@
-import os
+from random import randint
+from json import loads
 import pygame
 import sys
+import os
+
+levels = loads(''.join(open("levels.json").readlines()))['levels']
+level = 0
+maxlevel = 1
 
 pygame.init()
 
 displayInfo = pygame.display.Info()
-d = (displayInfo.current_w, displayInfo.current_h)
+d = (displayInfo.current_w - 200, displayInfo.current_h - 200)
 
 screen = pygame.display.set_mode(d)
-player_group = pygame.sprite.Group()
-sprites = pygame.sprite.Group()
-running = True
 
-pygame.display.toggle_fullscreen()
+pygame.font.init()
+myfont = pygame.font.SysFont('Comic Sans MS', 40)
 
+# pygame.display.toggle_fullscreen()
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -84,32 +89,172 @@ def endScreen():
     return
 
 
-class Player(pygame.sprite.Sprite):
-    up = load_image('Up.png')
-    down = load_image('Down.png')
-    left = load_image('Left.png')
-    right = load_image('Right.png')
+class Label:
+    def __init__(self, rect, text, fc=None, fh=None):
+        self.rect = pygame.Rect(rect)
+        self.text = text
+        self.bgcolor = pygame.Color("black")
+        self.font_color = fc if fc else pygame.Color("white")
+        self.font = pygame.font.Font(None, fh if fh else self.rect.height)
+        self.rendered_text = None
+        self.rendered_rect = None
 
-    def __init__(self, group, x, y):
+    def render(self, surface):
+        surface.fill(self.bgcolor, self.rect)
+        self.rendered_text = self.font.render(self.text, 1, self.font_color)
+        self.rendered_rect = self.rendered_text.get_rect(x=self.rect.x + 2, centery=self.rect.centery)
+        surface.blit(self.rendered_text, self.rendered_rect)
+
+
+class GUI:
+    def __init__(self):
+        self.elements = []
+
+    def add_element(self, element):
+        self.elements.append(element)
+
+    def render(self, surface):
+        for element in self.elements:
+            element.render(surface)
+
+    def update(self):
+        for element in self.elements:
+            update = getattr(element, "update", None)
+            if callable(update):
+                element.update()
+
+    def get_event(self, event):
+        for element in self.elements:
+            get_event = getattr(element, "get_event", None)
+            if callable(get_event):
+                element.get_event(event)
+
+
+class Board:
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.board = [[-1 for _ in range(width)] for _ in range(height)]
+        self.left = 10
+        self.top = 10
+        self.cell_size = 30
+
+    def set_view(self, left, top, cell_size):
+        self.left = left
+        self.top = top
+        self.cell_size = cell_size
+
+    def render(self, screen):
+        pass
+
+    def get_click(self, mouse_pos):
+        cell = self.get_cell(mouse_pos)
+        self.on_click(cell)
+
+    def get_cell(self, mouse_pos):
+        x, y = mouse_pos
+
+        if x < self.left or x > (self.cell_size * self.width + self.left):
+            return None
+        if y < self.top or y > (self.cell_size * self.height + self.top):
+            return None
+
+        x = (x - self.left) // self.cell_size
+        y = (y - self.top) // self.cell_size
+        return y, x
+
+    def on_click(self, cell_coords):
+        pass
+
+
+class MainGameBoard(Board):
+    def __init__(self, d, cnt, level):
+        super().__init__(cnt, cnt)
+        self.gui = GUI()
+        self.level = level
+
+        self.cell_size = int((d[1] - 20) / cnt)
+        self.left = int((d[0] - self.cell_size * cnt) / 2)
+        self.top = 10
+
+        self.playercoord = (0, 0)
+        self.player_group = pygame.sprite.Group()
+        self.player = Player(self.player_group, self.cell_size, self.left, self.top)
+
+        self.isFinished = False #Is level finished
+
+        self.board[randint(1, cnt-1)][randint(1, cnt-1)] = -2 #EXIT
+
+    def render(self, screen):
+        super().render(screen)
+        lx = self.left
+        ly = self.top
+        for i in range(self.height):
+            for j in range(self.width):
+                if self.board[i][j] == -2:
+                    pygame.draw.rect(screen, (128, 0, 100), (lx, ly, self.cell_size, self.cell_size))
+                    textsurface = myfont.render('E', False, (255, 255, 255))
+                    screen.blit(textsurface, (lx+2, ly+2))
+                lx += self.cell_size
+            lx = self.left
+            ly += self.cell_size
+
+        self.gui.render(screen)
+        self.gui.update()
+
+        self.player_group.draw(screen)
+
+    def on_click(self, cell_coords):
+        if cell_coords:
+            self.open_cell(*cell_coords)
+
+    def on_event(self, event):
+        if event.type == pygame.KEYDOWN:
+            newcoord = list(self.playercoord)
+            if (pygame.key.get_pressed()[pygame.K_UP] != 0):
+                newcoord[0] -= 1
+            if (pygame.key.get_pressed()[pygame.K_DOWN] != 0):
+                newcoord[0] += 1
+            if (pygame.key.get_pressed()[pygame.K_LEFT] != 0):
+                newcoord[1] -= 1
+            if (pygame.key.get_pressed()[pygame.K_RIGHT] != 0):
+                newcoord[1] += 1
+            if 0 <= newcoord[0] < self.width and 0 <= newcoord[1] < self.height:
+                self.playercoord = newcoord
+                self.player.get_event(event)
+
+            if self.board[newcoord[0]][newcoord[1]] == -2:
+                self.isFinished = True
+
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self, group, d, x, y):
         super().__init__(group)
-        self.image = self.up
+        self.d = d
+
+        self.up = pygame.transform.scale(load_image('Up.png'), (d - 5, d))
+        self.down = pygame.transform.scale(load_image('Down.png'), (d - 5, d))
+        self.left = pygame.transform.scale(load_image('Left.png'), (d - 5, d))
+        self.right = pygame.transform.scale(load_image('Right.png'), (d - 5, d))
+
+        self.image = self.down
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
 
-    def get_event(self):
-        if pygame.key.get_pressed()[pygame.K_UP] != 0:
+    def get_event(self, event):
+        if (pygame.key.get_pressed()[pygame.K_UP] != 0):
             self.image = self.up
-            self.rect.y -= 30
-        if pygame.key.get_pressed()[pygame.K_DOWN] != 0:
+            self.rect.y -= self.d
+        if (pygame.key.get_pressed()[pygame.K_DOWN] != 0):
             self.image = self.down
-            self.rect.y += 30
-        if pygame.key.get_pressed()[pygame.K_LEFT] != 0:
+            self.rect.y += self.d
+        if (pygame.key.get_pressed()[pygame.K_LEFT] != 0):
             self.image = self.left
-            self.rect.x -= 30
-        if pygame.key.get_pressed()[pygame.K_RIGHT] != 0:
+            self.rect.x -= self.d
+        if (pygame.key.get_pressed()[pygame.K_RIGHT] != 0):
             self.image = self.right
-            self.rect.x += 30
+            self.rect.x += self.d
 
 
 class Objects(pygame.sprite.Sprite):
@@ -131,23 +276,33 @@ class Objects(pygame.sprite.Sprite):
 image = load_image('Intro.jpg')
 image = pygame.transform.scale(image, d)
 startScreen()
-Player(player_group, 150, 150)
-Objects(sprites, 300, 500)
-image = load_image('Background.jpg')
+image = load_image(levels[0]['back'])
+
+board = MainGameBoard(d, 15, levels)
+running = True
 
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        for i in player_group:
-            i.get_event()
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            board.get_click(event.pos)
+        board.on_event(event)
+    screen.fill((0, 0, 0))
+
+    if board.isFinished:
+        board.isFinished = False
+        level += 1
+    if level == maxlevel:
+        image = load_image('Intro.jpg')
+        image = pygame.transform.scale(image, d)
+        endScreen()
+        running = False
+        terminate()
+
+    image = load_image(levels[level]['back'])
+    image = pygame.transform.scale(image, d)
     screen.blit(image, (0, 0))
-    sprites.draw(screen)
-    for i in sprites:
-        if i.update() == 1:
-            image = load_image('Intro.jpg')
-            image = pygame.transform.scale(image, d)
-            endScreen()
-            running = False
-    player_group.draw(screen)
+
+    board.render(screen)
     pygame.display.flip()
