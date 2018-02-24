@@ -8,7 +8,7 @@ import os
 
 levels = loads(''.join(open("levels.json").readlines()))['levels']
 level = 0
-maxlevel = 2
+maxlevel = 3
 
 pygame.init()
 
@@ -513,11 +513,11 @@ while running:
         endScreen()
         running = False
         terminate()
-    if board.isFinished:
+    if board.isFinished :
         board.isFinished = False
         level += 1
-        board = MainGameBoard(d, 15, levels, level)
-        print(level)
+        if level!=maxlevel:
+            board = MainGameBoard(d, 15, levels, level)
     if level == maxlevel:
         exit_game()
 
