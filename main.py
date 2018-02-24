@@ -211,8 +211,9 @@ class MainGameBoard(Board):
         self.gui.update()
         if self.exit.update(self.player_group)==1:
             self.isFinished = True
-        if self.enemy.update(self.player_group) == 1:
-            self.isFinished = True
+        for i in self.enemy_group:
+            if i.update(self.player_group) == 1:
+                self.isFinished = True
 
         self.player_group.draw(screen)
         self.enemy_group.draw(screen)
