@@ -176,13 +176,21 @@ class MainGameBoard(Board):
     def __init__(self, d, cnt, level):
         super().__init__(cnt, cnt)
         self.gui = GUI()
-        self.level = level
+        self.level = level[0]['board']
+        self.wall_coords=[]
+        self.enemy_coords=[]
+        for i in range(cnt):
+            for j in range(cnt):
+                if self.level[i][j]==1:
+                    self.wall_coords.append([i,j])
+                if self.level[i][j]==2:
+                    self.exit_coords=[i,j]
+                if self.level[i][j]==3:
+                    self.enemy_coords.append([i,j])
 
         self.cell_size = int((d[1] - 20) / cnt)
         self.left = int((d[0] - self.cell_size * cnt) / 2)
-        self.left1 = int((d[0] - self.cell_size * 5) / 2)
         self.top = 10
-        self.top1 = int((d[1] - self.cell_size * 5) / 2)
         self.cnt = cnt
 
         '''
@@ -243,7 +251,7 @@ class MainGameBoard(Board):
         super().render(screen)
         self.gui.render(screen)
         self.gui.update()
-        if self.exit.update(self.player_group) == 1:
+        if self.exit.update(self.player_group)==1:
             self.isFinished = True
         for e in self.enemys:
             if e.update(self.player_group) == 1:
@@ -269,12 +277,10 @@ class MainGameBoard(Board):
             pass
 
     def on_event(self, event):
-        c = 0
         if event.type == pygame.KEYDOWN:
             self.player.get_event(self.wall_group)
             for o in self.objects:
                 o.update(self.player_group)
-
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, group, d, x, y):
@@ -291,7 +297,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-    def get_event(self, group):
+    def get_event(self,group):
         if (pygame.key.get_pressed()[pygame.K_UP] != 0):
             self.image = self.up
             self.rect.y -= self.d
@@ -313,65 +319,63 @@ class Player(pygame.sprite.Sprite):
             if pygame.sprite.spritecollideany(self, group):
                 self.rect.x -= self.d
 
-
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, group, d, x, y):
         super().__init__(group)
         self.d = d
-        self.enemies = [
-            [pygame.transform.scale(load_image('buzz-left.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('buzz-right.png'), (d - 5, d))],
-            [pygame.transform.scale(load_image('eye-left.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('eye-right.png'), (d - 5, d))],
-            [pygame.transform.scale(load_image('ghoul-left.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('ghoul-right.png'), (d - 5, d))],
-            [pygame.transform.scale(load_image('gob-left.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('gob-right.png'), (d - 5, d))],
-            [pygame.transform.scale(load_image('mage-left.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('mage-right.png'), (d - 5, d))],
-            [pygame.transform.scale(load_image('skeleton-left.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('skeleton-right.png'), (d - 5, d))],
-            [pygame.transform.scale(load_image('slidan.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('slidan.png'), (d - 5, d))],
-            [pygame.transform.scale(load_image('spider-left.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('spider-right.png'), (d - 5, d))]
+        self.enemies=[
+        [pygame.transform.scale(load_image('buzz-left.png'), (d - 5, d)),
+        pygame.transform.scale(load_image('buzz-right.png'), (d - 5, d))],
+        [pygame.transform.scale(load_image('eye-left.png'), (d - 5, d)),
+        pygame.transform.scale(load_image('eye-right.png'), (d - 5, d))],
+       [pygame.transform.scale(load_image('ghoul-left.png'), (d - 5, d)),
+        pygame.transform.scale(load_image('ghoul-right.png'), (d - 5, d))],
+        [pygame.transform.scale(load_image('gob-left.png'), (d - 5, d)),
+        pygame.transform.scale(load_image('gob-right.png'), (d - 5, d))],
+        [pygame.transform.scale(load_image('mage-left.png'), (d - 5, d)),
+        pygame.transform.scale(load_image('mage-right.png'), (d - 5, d))],
+        [pygame.transform.scale(load_image('skeleton-left.png'), (d - 5, d)),
+        pygame.transform.scale(load_image('skeleton-right.png'), (d - 5, d))],
+        [pygame.transform.scale(load_image('slidan.png'), (d - 5, d)),
+        pygame.transform.scale(load_image('slidan.png'), (d - 5, d))],
+        [pygame.transform.scale(load_image('spider-left.png'), (d - 5, d)),
+        pygame.transform.scale(load_image('spider-right.png'), (d - 5, d))]
         ]
-        self.image = self.enemies[randint(0, 7)][randint(0, 1)]
+        self.image = self.enemies[randint(0,7)][randint(0,1)]
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-        self.c = 0
+        self.c=0
 
-    def get_event(self, group):
-        if self.c == 0:
+    def get_event(self,group):
+        if self.c==0:
             self.rect.y -= self.d
             if pygame.sprite.spritecollideany(self, group):
                 self.rect.y += self.d
-            self.c += 1
-        elif self.c == 1:
+            self.c+=1
+        elif self.c==1:
             self.rect.x += self.d
             if pygame.sprite.spritecollideany(self, group):
                 self.rect.x -= self.d
-            self.c += 1
-        elif self.c == 2:
-            self.rect.y += self.d
+            self.c+=1
+        elif self.c==2:
+            self.rect.y+=self.d
             if pygame.sprite.spritecollideany(self, group):
                 self.rect.y -= self.d
-            self.c += 1
-        elif self.c == 3:
-            self.rect.x -= self.d
+            self.c+=1
+        elif self.c==3:
+            self.rect.x-=self.d
             if pygame.sprite.spritecollideany(self, group):
                 self.rect.x += self.d
-            self.c = 0
-
-    def update(self, group):
-        if pygame.sprite.spritecollideany(self, group):
+            self.c=0
+    def update(self,group):
+        if pygame.sprite.spritecollideany(self,group):
             return 1
-
 
 class Exit(pygame.sprite.Sprite):
 
-    def __init__(self, group, d, x, y):
+    def __init__(self, group,d, x, y):
+
         super().__init__(group)
         self.d = d
         self.image = pygame.transform.scale(load_image('Exit.png'), (d - 5, d))
@@ -379,13 +383,12 @@ class Exit(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-    def update(self, group):
+    def update(self,group):
         if pygame.sprite.spritecollideany(self, group):
             return 1
-
-
 class Walls(pygame.sprite.Sprite):
-    def __init__(self, group, d, x, y):
+    def __init__(self, group,d, x, y):
+
         super().__init__(group)
         self.d = d
         self.image = pygame.transform.scale(load_image('Wall.png'), (d - 5, d))
