@@ -1,4 +1,5 @@
 from random import randint
+from interval import Interval
 from json import loads
 import pygame
 import sys
@@ -17,6 +18,9 @@ screen = pygame.display.set_mode(d)
 
 pygame.font.init()
 myfont = pygame.font.SysFont('Comic Sans MS', 40)
+
+inventory = {0: 1}
+objects_paths = ['Up.jpg']
 
 
 # pygame.display.toggle_fullscreen()
@@ -179,24 +183,61 @@ class MainGameBoard(Board):
         self.left1 = int((d[0] - self.cell_size * 5) / 2)
         self.top = 10
         self.top1 = int((d[1] - self.cell_size * 5) / 2)
+        self.cnt = cnt
 
+        '''
+        -1 - free
+        0  - player
+        1  - enemy
+        2  - wall
+        3  - object
+        4  - exit object
+        '''
+
+        self.board[0][0] = 0
         self.playercoord = (0, 0)
         self.player_group = pygame.sprite.Group()
         self.player = Player(self.player_group, self.cell_size, self.left, self.top)
 
-        self.enemy_group = pygame.sprite.Group()
-        self.enemy = Enemy(self.enemy_group, self.cell_size, self.left1, self.top1)
-
+        x, y = self.genrandpos()
+        self.board[x][y] = 4
         self.exit_group = pygame.sprite.Group()
-        self.exit = Exit(self.exit_group, self.cell_size, self.left + self.cell_size * randint(1, cnt - 1),
-                         self.top + self.cell_size * randint(1, cnt - 1))
+        self.exit = Exit(self.exit_group, self.cell_size, self.left + self.cell_size * x,
+                         self.top + self.cell_size * y)
 
         self.wall_group = pygame.sprite.Group()
         for i in range(5):
-            self.wall = Walls(self.wall_group, self.cell_size, self.left + self.cell_size * randint(1, cnt - 1),
-                              self.top + self.cell_size * randint(1, cnt - 1))
+            x, y = self.genrandpos()
+            self.board[x][y] = 2
+            self.wall = Walls(self.wall_group, self.cell_size, self.left + self.cell_size * x,
+                              self.top + self.cell_size * y)
+
+        self.objects_group = pygame.sprite.Group()
+        self.objects = []
+        for i in range(8):
+            x, y = self.genrandpos()
+            self.board[x][y] = 3
+            self.objects += [Object(self.objects_group, self.cell_size, self.left + self.cell_size * x,
+                                    self.top + self.cell_size * y, randint(0, len(objects_paths) - 1))]
+
+        self.enemy_group = pygame.sprite.Group()
+        self.enemys = []
+        self.intervals = []
+        for i in range(5):
+            x, y = self.genrandpos()
+            self.enemys += [Enemy(self.enemy_group, self.cell_size, self.left + self.cell_size * x,
+                                  self.top + self.cell_size * y)]
+            self.intervals += [Interval(0.5, self.enemys[i].get_event, args=[self.wall_group, ])]
+            self.intervals[i].start()
 
         self.isFinished = False  # Is level finished
+
+    def genrandpos(self):
+        x, y = 0, 0
+        while True:
+            x, y = randint(1, self.cnt - 1), randint(1, self.cnt - 1)
+            if self.board[x][y] == -1:
+                return x, y
 
     def render(self, screen):
         super().render(screen)
@@ -204,23 +245,35 @@ class MainGameBoard(Board):
         self.gui.update()
         if self.exit.update(self.player_group) == 1:
             self.isFinished = True
-        if self.enemy.update(self.player_group) == 1:
-            self.isFinished = True
+        for e in self.enemys:
+            if e.update(self.player_group) == 1:
+                self.isFinished = True
+        for e in self.objects:
+            if e.update(self.player_group) == 1:
+                self.objects.remove(e)
+                inventory[e.id] = inventory.pop(e.id, 0) + 1
+                e.remove(self.objects_group)
 
         self.player_group.draw(screen)
         self.enemy_group.draw(screen)
         self.exit_group.draw(screen)
         self.wall_group.draw(screen)
+        self.objects_group.draw(screen)
+
+        if self.isFinished:
+            for i in len(self.intervals):
+                self.intervals[i].stop()
 
     def on_click(self, cell_coords):
         if cell_coords:
-            self.open_cell(*cell_coords)
+            pass
 
     def on_event(self, event):
         c = 0
         if event.type == pygame.KEYDOWN:
             self.player.get_event(self.wall_group)
-            self.enemy.get_event(self.wall_group)
+            for o in self.objects:
+                o.update(self.player_group)
 
 
 class Player(pygame.sprite.Sprite):
@@ -341,6 +394,22 @@ class Walls(pygame.sprite.Sprite):
         self.rect.y = y
 
 
+class Object(pygame.sprite.Sprite):
+
+    def __init__(self, group, d, x, y, id):
+        super().__init__(group)
+        self.d = d
+        self.image = pygame.transform.scale(load_image(objects_paths[id]), (d - 5, d))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.id = id
+
+    def update(self, group):
+        if pygame.sprite.spritecollideany(self, group):
+            return 1
+
+
 image = load_image('Intro.jpg')
 image = pygame.transform.scale(image, d)
 startScreen()
@@ -362,6 +431,7 @@ while running:
         board.isFinished = False
         level += 1
     if level == maxlevel:
+        pygame.display.flip()
         image = load_image('Intro.jpg')
         image = pygame.transform.scale(image, d)
         endScreen()
