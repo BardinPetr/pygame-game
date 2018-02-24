@@ -217,7 +217,7 @@ class MainGameBoard(Board):
     def on_event(self, event):
         c=0
         if event.type == pygame.KEYDOWN:
-            self.player.get_event(0)
+            self.player.get_event(self.wall_group)
             self.enemy.get_event()
 
 class Player(pygame.sprite.Sprite):
@@ -235,19 +235,27 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-    def get_event(self,a):
-        if (pygame.key.get_pressed()[pygame.K_UP] != 0) and a!=1:
+    def get_event(self,group):
+        if (pygame.key.get_pressed()[pygame.K_UP] != 0):
             self.image = self.up
             self.rect.y -= self.d
-        if (pygame.key.get_pressed()[pygame.K_DOWN] != 0) and a!=2:
+            if pygame.sprite.spritecollideany(self, group):
+                self.rect.y += self.d
+        if (pygame.key.get_pressed()[pygame.K_DOWN] != 0):
             self.image = self.down
             self.rect.y += self.d
-        if (pygame.key.get_pressed()[pygame.K_LEFT] != 0) and a!=3:
+            if pygame.sprite.spritecollideany(self, group):
+                self.rect.y -= self.d
+        if (pygame.key.get_pressed()[pygame.K_LEFT] != 0):
             self.image = self.left
             self.rect.x -= self.d
-        if (pygame.key.get_pressed()[pygame.K_RIGHT] != 0) and a!=4:
+            if pygame.sprite.spritecollideany(self, group):
+                self.rect.x += self.d
+        if (pygame.key.get_pressed()[pygame.K_RIGHT] != 0):
             self.image = self.right
             self.rect.x += self.d
+            if pygame.sprite.spritecollideany(self, group):
+                self.rect.x -= self.d
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, group, d, x, y):
@@ -317,9 +325,6 @@ class Walls(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
-    def update(self,group):
-        if pygame.sprite.spritecollideany(self, group):
-            return 1
 
 image = load_image('Intro.jpg')
 image = pygame.transform.scale(image, d)
