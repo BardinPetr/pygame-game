@@ -6,7 +6,7 @@ import os
 
 levels = loads(''.join(open("levels.json").readlines()))['levels']
 level = 0
-maxlevel = 1
+maxlevel = 2
 
 pygame.init()
 
@@ -371,6 +371,8 @@ while running:
     if board.isFinished:
         board.isFinished = False
         level += 1
+        board = MainGameBoard(d, 15, levels, level)
+        print(level)
     if level == maxlevel:
         image = load_image('Intro.jpg')
         image = pygame.transform.scale(image, d)
