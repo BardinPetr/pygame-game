@@ -6,7 +6,7 @@ import os
 
 levels = loads(''.join(open("levels.json").readlines()))['levels']
 level = 0
-maxlevel = 2
+maxlevel = 3
 
 pygame.init()
 
@@ -297,6 +297,7 @@ class Enemy(pygame.sprite.Sprite):
         self.c=0
 
     def get_event(self,group):
+        self.c=randint(0,4)
         if self.c==0:
             self.rect.y -= self.d
             if pygame.sprite.spritecollideany(self, group):
@@ -368,11 +369,11 @@ while running:
         endScreen()
         running = False
         terminate()
-    if board.isFinished:
+    if board.isFinished :
         board.isFinished = False
         level += 1
-        board = MainGameBoard(d, 15, levels, level)
-        print(level)
+        if level!=maxlevel:
+            board = MainGameBoard(d, 15, levels, level)
     if level == maxlevel:
         image = load_image('Intro.jpg')
         image = pygame.transform.scale(image, d)
