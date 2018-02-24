@@ -218,7 +218,7 @@ class MainGameBoard(Board):
         c=0
         if event.type == pygame.KEYDOWN:
             self.player.get_event(self.wall_group)
-            self.enemy.get_event()
+            self.enemy.get_event(self.wall_group)
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, group, d, x, y):
@@ -285,18 +285,26 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.y = y
         self.c=0
 
-    def get_event(self):
+    def get_event(self,group):
         if self.c==0:
             self.rect.y -= self.d
+            if pygame.sprite.spritecollideany(self, group):
+                self.rect.y += self.d
             self.c+=1
         elif self.c==1:
             self.rect.x += self.d
+            if pygame.sprite.spritecollideany(self, group):
+                self.rect.x -= self.d
             self.c+=1
         elif self.c==2:
             self.rect.y+=self.d
+            if pygame.sprite.spritecollideany(self, group):
+                self.rect.y -= self.d
             self.c+=1
         elif self.c==3:
             self.rect.x-=self.d
+            if pygame.sprite.spritecollideany(self, group):
+                self.rect.x += self.d
             self.c=0
     def update(self,group):
         if pygame.sprite.spritecollideany(self,group):
