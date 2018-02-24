@@ -186,52 +186,39 @@ class MainGameBoard(Board):
         self.enemy_group=pygame.sprite.Group()
         self.enemy=Enemy(self.enemy_group, self.cell_size, self.left1, self.top1)
 
+        self.exit_group=pygame.sprite.Group()
+        self.exit = Exit(self.exit_group, self.cell_size, self.left+self.cell_size * randint(1,cnt-1),self.top+self.cell_size * randint(1,cnt-1))
+
+        self.wall_group=pygame.sprite.Group()
+        for i in range(5):
+            self.wall=Walls(self.wall_group, self.cell_size, self.left+self.cell_size * randint(1,cnt-1),self.top+self.cell_size * randint(1,cnt-1))
+
         self.isFinished = False #Is level finished
 
-        self.board[randint(1, cnt-1)][randint(1, cnt-1)] = -2 #EXIT
 
     def render(self, screen):
         super().render(screen)
-        lx = self.left
-        ly = self.top
-        for i in range(self.height):
-            for j in range(self.width):
-                if self.board[i][j] == -2:
-                    pygame.draw.rect(screen, (128, 0, 100), (lx, ly, self.cell_size, self.cell_size))
-                    textsurface = myfont.render('E', False, (255, 255, 255))
-                    screen.blit(textsurface, (lx+2, ly+2))
-                lx += self.cell_size
-            lx = self.left
-            ly += self.cell_size
-
         self.gui.render(screen)
         self.gui.update()
+        if self.exit.update(self.player_group)==1:
+            self.isFinished = True
+        if self.enemy.update(self.player_group) == 1:
+            self.isFinished = True
 
         self.player_group.draw(screen)
         self.enemy_group.draw(screen)
+        self.exit_group.draw(screen)
+        self.wall_group.draw(screen)
 
     def on_click(self, cell_coords):
         if cell_coords:
             self.open_cell(*cell_coords)
 
     def on_event(self, event):
+        c=0
         if event.type == pygame.KEYDOWN:
-            newcoord = list(self.playercoord)
-            if (pygame.key.get_pressed()[pygame.K_UP] != 0):
-                newcoord[0] -= 1
-            if (pygame.key.get_pressed()[pygame.K_DOWN] != 0):
-                newcoord[0] += 1
-            if (pygame.key.get_pressed()[pygame.K_LEFT] != 0):
-                newcoord[1] -= 1
-            if (pygame.key.get_pressed()[pygame.K_RIGHT] != 0):
-                newcoord[1] += 1
-            if 0 <= newcoord[0] < self.width and 0 <= newcoord[1] < self.height:
-                self.playercoord = newcoord
-                self.player.get_event(event)
-            if self.board[newcoord[0]][newcoord[1]] == -2:
-                self.isFinished = True
-            if self.enemy.get_event(self.player_group)==1:
-                self.isFinished = True
+            self.player.get_event(0)
+            self.enemy.get_event()
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, group, d, x, y):
@@ -248,17 +235,17 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
-    def get_event(self, event):
-        if (pygame.key.get_pressed()[pygame.K_UP] != 0):
+    def get_event(self,a):
+        if (pygame.key.get_pressed()[pygame.K_UP] != 0) and a!=1:
             self.image = self.up
             self.rect.y -= self.d
-        if (pygame.key.get_pressed()[pygame.K_DOWN] != 0):
+        if (pygame.key.get_pressed()[pygame.K_DOWN] != 0) and a!=2:
             self.image = self.down
             self.rect.y += self.d
-        if (pygame.key.get_pressed()[pygame.K_LEFT] != 0):
+        if (pygame.key.get_pressed()[pygame.K_LEFT] != 0) and a!=3:
             self.image = self.left
             self.rect.x -= self.d
-        if (pygame.key.get_pressed()[pygame.K_RIGHT] != 0):
+        if (pygame.key.get_pressed()[pygame.K_RIGHT] != 0) and a!=4:
             self.image = self.right
             self.rect.x += self.d
 
@@ -290,7 +277,7 @@ class Enemy(pygame.sprite.Sprite):
         self.rect.y = y
         self.c=0
 
-    def get_event(self, group):
+    def get_event(self):
         if self.c==0:
             self.rect.y -= self.d
             self.c+=1
@@ -303,16 +290,17 @@ class Enemy(pygame.sprite.Sprite):
         elif self.c==3:
             self.rect.x-=self.d
             self.c=0
+    def update(self,group):
         if pygame.sprite.spritecollideany(self,group):
             return 1
 
-class Objects(pygame.sprite.Sprite):
+class Exit(pygame.sprite.Sprite):
 
     def __init__(self, group,d, x, y):
 
         super().__init__(group)
         self.d = d
-        self.image = pygame.transform.scale(load_image('Cancel.png'), (d - 5, d))
+        self.image = pygame.transform.scale(load_image('Exit.png'), (d - 5, d))
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -320,7 +308,18 @@ class Objects(pygame.sprite.Sprite):
     def update(self,group):
         if pygame.sprite.spritecollideany(self, group):
             return 1
+class Walls(pygame.sprite.Sprite):
+    def __init__(self, group,d, x, y):
 
+        super().__init__(group)
+        self.d = d
+        self.image = pygame.transform.scale(load_image('Wall.png'), (d - 5, d))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+    def update(self,group):
+        if pygame.sprite.spritecollideany(self, group):
+            return 1
 
 image = load_image('Intro.jpg')
 image = pygame.transform.scale(image, d)
