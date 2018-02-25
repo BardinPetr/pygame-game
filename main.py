@@ -112,7 +112,7 @@ def create_particles(position, t):
             Particle2(position, random.choice(numbers), random.choice(numbers))
 
 def endScreen():
-    introText = [""]
+    introText = ["конец"]
 
     screen.blit(image, (0, 0))
     font = pygame.font.Font(None, 300)
@@ -133,7 +133,6 @@ def endScreen():
             elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
                 return
         pygame.display.flip()
-        clock.tick(50)
     return
 
 
@@ -581,7 +580,6 @@ while running:
     screen.fill((0, 0, 0))
 
     if board.GO:
-        go = True
         play(0)
         image = load_image('Game_Over.png')
         image = pygame.transform.scale(image, d)
@@ -599,7 +597,7 @@ while running:
     a = sorted(list(set(inventory.keys())))
     for i in range(5):
         if i < len(a):
-            isprites[i].set_id(i)
+            isprites[i].set_id(a[i])
         else:
             isprites[i].set_id(-1)
 
