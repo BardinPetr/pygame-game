@@ -561,4 +561,8 @@ while running:
     introRect.left = 60
     screen.blit(stringRendered, introRect)
 
+    if 1 in inventory.keys() and healhs[0] != 3:
+        healhs[0] = 3
+        inventory.pop(1)
+
     pygame.display.flip()
