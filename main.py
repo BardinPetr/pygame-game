@@ -1,5 +1,6 @@
 from interval import Interval
 from random import randint
+import random
 from json import loads
 import pygame
 import time
@@ -29,6 +30,10 @@ objects_paths = ['obj1.png', 'obj2.png', 'obj3.png', 'obj5.png', 'obj6.png', "tp
 healhs = {0: 3, 1: 0}  # Big cludge! used only value
 
 millis = lambda: int(round(time.time() * 1000))
+all_sprites = pygame.sprite.Group()
+clock = pygame.time.Clock()
+
+go = False
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -74,6 +79,38 @@ def startScreen():
         pygame.display.flip()
 
 
+screen_rect = (0, 0, d[0], d[1])
+
+
+class Particle2(pygame.sprite.Sprite):
+    fire = [load_image("mist.png")]
+    for scale in [1]:
+        fire.append(pygame.transform.scale(fire[0], (scale, scale)))
+
+    def __init__(self, pos, dx, dy):
+        super().__init__(all_sprites)
+        self.image = random.choice(self.fire)
+        self.rect = self.image.get_rect()
+        self.velocity = [dx, dy]
+        self.rect.x, self.rect.y = pos
+        self.gravity = 1
+
+    def update(self):
+        self.velocity[1] += self.gravity
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
+
+def create_particles(position, t):
+    particle_count = 2
+    numbers = range(-2, 3)
+    for _ in range(particle_count):
+        if t:
+            Particle(position, random.choice(numbers), random.choice(numbers))
+        else:
+            Particle2(position, random.choice(numbers), random.choice(numbers))
+
 def endScreen():
     introText = [""]
 
@@ -94,8 +131,9 @@ def endScreen():
             if event.type == pygame.QUIT:
                 terminate()
             elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                return  # начинаем игру
+                return
         pygame.display.flip()
+        clock.tick(50)
     return
 
 
@@ -493,6 +531,7 @@ def play(id):
     e = pygame.mixer.Sound(os.path.join('data', musics[id]))
     e.play()
 
+
 image = load_image('Intro.jpg')
 image = pygame.transform.scale(image, d)
 startScreen()
@@ -514,7 +553,6 @@ for i in range(5):
 healths_group = pygame.sprite.Group()
 healths_sp = HealthBar(healths_group, d[0] - 135, 20)
 score_sp = Score(healths_group, 6, 10)
-
 
 def exit_game():
     for i in board.intervals:
@@ -543,6 +581,7 @@ while running:
     screen.fill((0, 0, 0))
 
     if board.GO:
+        go = True
         play(0)
         image = load_image('Game_Over.png')
         image = pygame.transform.scale(image, d)
@@ -593,5 +632,10 @@ while running:
     introRect.top = 20
     introRect.left = 60
     screen.blit(stringRendered, introRect)
+
+    if 0 in inventory.keys():
+        create_particles((randint(100, d[0] - 100), randint(100, d[1] - 100)), False)
+        all_sprites.update()
+        all_sprites.draw(screen)
 
     pygame.display.flip()
