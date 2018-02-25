@@ -258,10 +258,13 @@ class MainGameBoard(Board):
                         healhs[0] -= 1
                         if healhs[0] == 0:
                             self.GO = True
+                        else:
+                            play(1)
                         self.lastkill = millis()
         for e in self.objects:
             if e.update(self.player_group) == 1:
                 self.objects.remove(e)
+                play(2)
                 if e.id in [0, 1, 2]:
                     inventory[e.id] = inventory.pop(e.id, 0) + 1
                 else:
@@ -486,7 +489,7 @@ class Score(pygame.sprite.Sprite):
         self.rect.y = self.y
 
 def play(id):
-    musics = ["a.wav"]
+    musics = ["a.wav", "3.wav", "c.wav"]
     e = pygame.mixer.Sound(os.path.join('data', musics[id]))
     e.play()
 
