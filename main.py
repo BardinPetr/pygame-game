@@ -23,12 +23,12 @@ myfont = pygame.font.SysFont('Comic Sans MS', 40)
 # pygame.display.toggle_fullscreen()
 
 inventory = {}
-objects_paths = ['obj1.png','obj2.png','obj3.png','obj5.png','obj6.png']
+objects_paths = ['obj1.png', 'obj2.png', 'obj3.png', 'obj5.png', 'obj6.png', "tp.png"]
 
-healhs = {0:3, 1:0} #Big cludge! used only value
-
+healhs = {0: 3, 1: 0}  # Big cludge! used only value
 
 millis = lambda: int(round(time.time() * 1000))
+
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -251,7 +251,9 @@ class MainGameBoard(Board):
             if i.update(self.player_group) == 1:
                 if (millis() - self.lastkill) > 800:
                     if 0 in inventory.keys():
-                        inventory.pop(0)
+                        inventory[0] -= 1
+                        if inventory[0] == 0:
+                            inventory.pop(0)
                     else:
                         healhs[0] -= 1
                         if healhs[0] == 0:
@@ -434,6 +436,7 @@ class Inventory(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, group):
             return 1
 
+
 class InventoryItem(pygame.sprite.Sprite):
     def __init__(self, group, x, y):
         super().__init__(group)
@@ -453,18 +456,21 @@ class InventoryItem(pygame.sprite.Sprite):
         if pygame.sprite.spritecollideany(self, group):
             return 1
 
+
 health_paths = ["0.png", "1.png", "2.png", "3.png"]
+
+
 class HealthBar(pygame.sprite.Sprite):
     def __init__(self, group, x, y):
         super().__init__(group)
         self.x, self.y = x, y
-        self.image = pygame.transform.scale(load_image(health_paths[healhs[0]]), (54*2, 17*2))
+        self.image = pygame.transform.scale(load_image(health_paths[healhs[0]]), (54 * 2, 17 * 2))
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
 
     def updatestate(self):
-        self.image = pygame.transform.scale(load_image(health_paths[healhs[0]]), (54*2, 17*2))
+        self.image = pygame.transform.scale(load_image(health_paths[healhs[0]]), (54 * 2, 17 * 2))
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
@@ -478,6 +484,7 @@ class Score(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
+
 
 image = load_image('Intro.jpg')
 image = pygame.transform.scale(image, d)
@@ -501,6 +508,7 @@ healths_group = pygame.sprite.Group()
 healths_sp = HealthBar(healths_group, d[0] - 135, 20)
 score_sp = Score(healths_group, 6, 10)
 
+
 def exit_game():
     for i in board.intervals:
         i.stop()
@@ -512,6 +520,7 @@ def exit_game():
     terminate()
     exit(0)
 
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -519,6 +528,8 @@ while running:
                 i.stop()
             terminate()
             exit(0)
+        elif event.type == pygame.KEYDOWN and event.key == pygame.K_F12:
+            pygame.display.toggle_fullscreen()
         elif event.type == pygame.MOUSEBUTTONDOWN:
             board.get_click(event.pos)
         board.on_event(event)
@@ -530,18 +541,32 @@ while running:
         endScreen()
         running = False
         terminate()
-    if board.isFinished :
+    if board.isFinished:
         board.isFinished = False
         level += 1
-        if level!=maxlevel:
+        if level != maxlevel:
             board = MainGameBoard(d, 15, levels, level)
     if level == maxlevel:
         exit_game()
 
-    idd = 0
-    for i in sorted(list(inventory.keys())):
-        isprites[idd].set_id(i)
-        idd += 1
+    a = sorted(list(set(inventory.keys())))
+    for i in range(5):
+        if i < len(a):
+            isprites[i].set_id(i)
+        else:
+            isprites[i].set_id(-1)
+
+    if 1 in inventory.keys() and healhs[0] != 3:
+        healhs[0] = 3
+        inventory[1] -= 1
+        if inventory[1] == 0:
+            inventory.pop(1)
+
+    if 2 in inventory.keys() and healhs[0] + 1 < 4:
+        healhs[0] += 1
+        inventory[2] -= 1
+        if inventory[2] == 0:
+            inventory.pop(2)
 
     image = load_image(levels[level]['back'])
     image = pygame.transform.scale(image, d)
@@ -560,9 +585,5 @@ while running:
     introRect.top = 20
     introRect.left = 60
     screen.blit(stringRendered, introRect)
-
-    if 1 in inventory.keys() and healhs[0] != 3:
-        healhs[0] = 3
-        inventory.pop(1)
 
     pygame.display.flip()
