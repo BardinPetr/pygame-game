@@ -23,9 +23,9 @@ myfont = pygame.font.SysFont('Comic Sans MS', 40)
 # pygame.display.toggle_fullscreen()
 
 inventory = {}
-objects_paths = ['slidan.png']
+objects_paths = ['obj1.png','obj2.png','obj3.png','obj5.png','obj6.png']
 
-healhs = {0:3} #Big cludge! used only value
+healhs = {0:3, 1:0} #Big cludge! used only value
 
 
 millis = lambda: int(round(time.time() * 1000))
@@ -224,9 +224,9 @@ class MainGameBoard(Board):
 
         self.objects_group = pygame.sprite.Group()
         self.objects = []
-        for i in range(8):
+        for i in range(5):
             x, y = self.genrandpos()
-            self.level[x][y] = 3
+            self.level[x][y] = 10
             self.objects += [Object(self.objects_group, self.cell_size, self.left + self.cell_size * x,
                                     self.top + self.cell_size * y, randint(0, len(objects_paths) - 1))]
 
@@ -238,7 +238,7 @@ class MainGameBoard(Board):
         x, y = 0, 0
         while True:
             x, y = randint(1, self.cnt - 1), randint(1, self.cnt - 1)
-            if self.board[x][y] == -1 and self.level[x][y] == 0:
+            if self.board[x][y] == -1 and self.level[x][y] == 0 and self.level[y][x] == 0:
                 return x, y
 
     def render(self, screen):
@@ -250,14 +250,20 @@ class MainGameBoard(Board):
         for i in self.enemy_group:
             if i.update(self.player_group) == 1:
                 if (millis() - self.lastkill) > 800:
-                    healhs[0] -= 1
-                    if healhs[0] == 0:
-                        self.GO = True
-                    self.lastkill = millis()
+                    if 0 in inventory.keys():
+                        inventory.pop(0)
+                    else:
+                        healhs[0] -= 1
+                        if healhs[0] == 0:
+                            self.GO = True
+                        self.lastkill = millis()
         for e in self.objects:
             if e.update(self.player_group) == 1:
                 self.objects.remove(e)
-                inventory[e.id] = inventory.pop(e.id, 0) + 1
+                if e.id in [0, 1, 2]:
+                    inventory[e.id] = inventory.pop(e.id, 0) + 1
+                else:
+                    healhs[1] += 10 if e.id == 3 else 20
                 e.remove(self.objects_group)
 
         self.player_group.draw(screen)
@@ -266,9 +272,12 @@ class MainGameBoard(Board):
         self.wall_group.draw(screen)
         self.objects_group.draw(screen)
 
-        if self.isFinished:
-            for i in len(self.intervals):
-                self.intervals[i].stop()
+        try:
+            if self.isFinished:
+                for i in range(len(self.intervals)):
+                    self.intervals[i].stop()
+        except Exception:
+            pass
 
     def on_click(self, cell_coords):
         if cell_coords:
@@ -336,12 +345,10 @@ class Enemy(pygame.sprite.Sprite):
              pygame.transform.scale(load_image('mage-right.png'), (d - 5, d))],
             [pygame.transform.scale(load_image('skeleton-left.png'), (d - 5, d)),
              pygame.transform.scale(load_image('skeleton-right.png'), (d - 5, d))],
-            [pygame.transform.scale(load_image('slidan.png'), (d - 5, d)),
-             pygame.transform.scale(load_image('slidan.png'), (d - 5, d))],
             [pygame.transform.scale(load_image('spider-left.png'), (d - 5, d)),
              pygame.transform.scale(load_image('spider-right.png'), (d - 5, d))]
         ]
-        self.image = self.enemies[randint(0, 7)][randint(0, 1)]
+        self.image = self.enemies[randint(0, 6)][randint(0, 1)]
         self.rect = self.image.get_rect()
         self.rect.x = x
         self.rect.y = y
@@ -462,6 +469,16 @@ class HealthBar(pygame.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
 
+
+class Score(pygame.sprite.Sprite):
+    def __init__(self, group, x, y):
+        super().__init__(group)
+        self.x, self.y = x, y
+        self.image = pygame.transform.scale(load_image("obj5.png"), (50, 50))
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+
 image = load_image('Intro.jpg')
 image = pygame.transform.scale(image, d)
 startScreen()
@@ -482,6 +499,7 @@ for i in range(5):
 
 healths_group = pygame.sprite.Group()
 healths_sp = HealthBar(healths_group, d[0] - 135, 20)
+score_sp = Score(healths_group, 6, 10)
 
 def exit_game():
     for i in board.intervals:
@@ -493,7 +511,6 @@ def exit_game():
     endScreen()
     terminate()
     exit(0)
-
 
 while running:
     for event in pygame.event.get():
@@ -536,5 +553,12 @@ while running:
 
     healths_group.draw(screen)
     healths_sp.updatestate()
+
+    font = pygame.font.Font(None, 50)
+    stringRendered = font.render(str(healhs[1]), 1, pygame.Color('red'))
+    introRect = stringRendered.get_rect()
+    introRect.top = 20
+    introRect.left = 60
+    screen.blit(stringRendered, introRect)
 
     pygame.display.flip()
