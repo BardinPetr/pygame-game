@@ -11,6 +11,7 @@ level = 0
 maxlevel = 3
 
 pygame.init()
+pygame.mixer.init()
 
 displayInfo = pygame.display.Info()
 d = (displayInfo.current_w - 200, displayInfo.current_h - 200)
@@ -28,7 +29,6 @@ objects_paths = ['obj1.png', 'obj2.png', 'obj3.png', 'obj5.png', 'obj6.png', "tp
 healhs = {0: 3, 1: 0}  # Big cludge! used only value
 
 millis = lambda: int(round(time.time() * 1000))
-
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -485,6 +485,10 @@ class Score(pygame.sprite.Sprite):
         self.rect.x = self.x
         self.rect.y = self.y
 
+def play(id):
+    musics = ["a.wav"]
+    e = pygame.mixer.Sound(os.path.join('data', musics[id]))
+    e.play()
 
 image = load_image('Intro.jpg')
 image = pygame.transform.scale(image, d)
@@ -536,6 +540,7 @@ while running:
     screen.fill((0, 0, 0))
 
     if board.GO:
+        play(0)
         image = load_image('Game_Over.png')
         image = pygame.transform.scale(image, d)
         endScreen()
